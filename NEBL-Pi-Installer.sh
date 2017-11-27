@@ -1,5 +1,5 @@
 #!/bin/bash
-#NEBL-Pi Installer v0.1
+#NEBL-Pi Installer v0.3
 
 echo "================================================================================"
 echo "=================== Welcome to the Ofiicial NEBL-Pi Installer =================="
@@ -20,17 +20,24 @@ echo "You can safely ignore all warnings during the compilation process, but if 
 echo "run into any errors, please report them to info@nebl.io"
 echo "================================================================================"
 
-USAGE="$0 [-d | -q | -dq]"
+USAGE="$0 [-d | -q | -c | -dqc]"
 
 NEBLIODIR=~/neblpi-source
 DEST_DIR=~/Desktop/
 NEBLIOD=false
 NEBLIOQT=false
 COMPILE=false
+JESSIE=false
 
 # check if we have a Desktop, if not, use home dir
 if [ ! -d "$DEST_DIR" ]; then
     DEST_DIR=~/
+fi
+
+# check if we are running on Raspbian Jessie
+if grep -q jessie "/etc/os-release"; then
+    echo "Jessie detected, following Jessie install routine"
+    JESSIE=true
 fi
 
 while getopts ':dqc' opt
@@ -64,8 +71,12 @@ if [ "$NEBLIOQT" = true ]; then
     sudo apt-get install qtbase5-dev-tools -y
     sudo apt-get install qttools5-dev-tools -y
 fi
-sudo aptitude install libssl1.0-dev -y
-sudo apt-get install wget
+if [ "$JESSIE" = true ]; then
+    sudo apt-get install libssl-dev -y
+else
+    sudo aptitude install libssl1.0-dev -y
+fi
+sudo apt-get install wget -y
 
 if [ "$COMPILE" = true ]; then
     # delete our src folder and then remake it
@@ -94,14 +105,21 @@ if [ "$NEBLIOD" = true ]; then
         cp ./nebliod $DEST_DIR
     else
         cd $DEST_DIR
-        wget https://github.com/NeblioTeam/neblio/releases/download/v1.2/NEBL-Pi-raspbian-nebliod---2017-11-21
-        mv NEBL-Pi-raspbian-nebliod---2017-11-21 nebliod
+        if [ "$JESSIE" = true ]; then
+            wget https://github.com/NeblioTeam/neblio/releases/download/v1.2/NEBL-Pi-raspbian-jessie-nebliod---2017-11-21
+            mv NEBL-Pi-raspbian-jessie-nebliod---2017-11-21 nebliod
+        else
+            wget https://github.com/NeblioTeam/neblio/releases/download/v1.2/NEBL-Pi-raspbian-stretch-nebliod---2017-11-21
+            mv NEBL-Pi-raspbian-stretch-nebliod---2017-11-21 nebliod
+        fi
         sudo chmod 775 nebliod
     fi
-    echo rpcuser=$USER >> ~/.neblio/neblio.conf
-    RPCPASSWORD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
-    echo rpcpassword=$RPCPASSWORD >> ~/.neblio/neblio.conf
-    echo rpcallowip=127.0.0.1 >> ~/.neblio/neblio.conf
+    if [ ! -f ~/.neblio/neblio.conf ]; then
+        echo rpcuser=$USER >> ~/.neblio/neblio.conf
+        RPCPASSWORD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+        echo rpcpassword=$RPCPASSWORD >> ~/.neblio/neblio.conf
+        echo rpcallowip=127.0.0.1 >> ~/.neblio/neblio.conf
+    fi
 fi
 cd ..
 if [ "$NEBLIOQT" = true ]; then
@@ -111,8 +129,13 @@ if [ "$NEBLIOQT" = true ]; then
         cp ./neblio-qt $DEST_DIR
     else
         cd $DEST_DIR
-        wget https://github.com/NeblioTeam/neblio/releases/download/v1.2/NEBL-Pi-raspbian-neblio-qt---2017-11-21
-        mv NEBL-Pi-raspbian-neblio-qt---2017-11-21 neblio-qt
+        if [ "$JESSIE" = true ]; then
+            wget https://github.com/NeblioTeam/neblio/releases/download/v1.2/NEBL-Pi-raspbian-jessie-neblio-qt---2017-11-21
+            mv NEBL-Pi-raspbian-jessie-neblio-qt---2017-11-21 neblio-qt
+        else
+            wget https://github.com/NeblioTeam/neblio/releases/download/v1.2/NEBL-Pi-raspbian-stretch-neblio-qt---2017-11-21
+            mv NEBL-Pi-raspbian-stretch-neblio-qt---2017-11-21 neblio-qt
+        fi
         sudo chmod 775 neblio-qt
     fi
 fi
